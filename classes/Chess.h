@@ -14,6 +14,13 @@ enum ChessPiece {
     King
 };
 
+// added move struct
+
+struct Move {
+    int from;
+    int to;
+};
+
 //
 // the main game class
 //
@@ -44,6 +51,10 @@ public:
 private:
     Bit *       PieceForPlayer(const int playerNumber, ChessPiece piece);
     const char  bitToPieceNotation(int row, int column) const;
+
+    std::list<Move>  _moves;
+
+    void        generateMoves();
 
     ChessSquare      _grid[8][8];
 };

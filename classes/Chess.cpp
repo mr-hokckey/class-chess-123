@@ -49,11 +49,40 @@ void Chess::setUpBoard()
             _grid[y][x].setNotation(piece);
         }
     }
-    Bit* bit = PieceForPlayer(0, King);
-    bit->setPosition(_grid[4][4].getPosition());
-    bit->setParent(&_grid[4][4]);
-    bit->setGameTag(King);
-    _grid[0][0].setBit(bit);
+    // Made this array so we can iterate through it for the back ranks.
+    ChessPiece backRankPieces[8] = { Rook, Knight, Bishop, Queen, King, Bishop, Knight, Rook };
+    
+    for (int x = 0; x < _gameOptions.rowX; x++) {
+        Bit* bit = PieceForPlayer(1, backRankPieces[x]);
+        bit->setPosition(_grid[7][x].getPosition());
+        bit->setParent(&_grid[7][x]);
+        bit->setGameTag(backRankPieces[x] + 128); // For black pieces, set game tag to enum + 128
+        _grid[7][x].setBit(bit);
+    }
+
+    for (int x = 0; x < _gameOptions.rowX; x++) {
+        Bit* bit = PieceForPlayer(1, Pawn);
+        bit->setPosition(_grid[6][x].getPosition());
+        bit->setParent(&_grid[6][x]);
+        bit->setGameTag(Pawn + 128); // For black pieces, set game tag to enum + 128 
+        _grid[6][x].setBit(bit);
+    }
+
+    for (int x = 0; x < _gameOptions.rowX; x++) {
+        Bit* bit = PieceForPlayer(0, Pawn);
+        bit->setPosition(_grid[1][x].getPosition());
+        bit->setParent(&_grid[1][x]);
+        bit->setGameTag(Pawn);
+        _grid[1][x].setBit(bit);
+    }
+
+    for (int x = 0; x < _gameOptions.rowX; x++) {
+        Bit* bit = PieceForPlayer(0, backRankPieces[x]);
+        bit->setPosition(_grid[0][x].getPosition());
+        bit->setParent(&_grid[0][x]);
+        bit->setGameTag(backRankPieces[x]);
+        _grid[0][x].setBit(bit);
+    }
 }
 
 //
@@ -66,6 +95,68 @@ bool Chess::actionForEmptyHolder(BitHolder &holder)
 
 bool Chess::canBitMoveFrom(Bit &bit, BitHolder &src)
 {
+    // can't move if it's not your turn
+    // if (bit.getOwner() != getCurrentPlayer()) {
+    //     return false;
+    // }
+
+    // ChessSquare& srcSquare = static_cast<ChessSquare&>(src);
+    // int y = srcSquare.getRow();
+    // int x = srcSquare.getColumn();
+    // int pieceTag = bit.gameTag();
+
+
+    // bool canBitMove = true;
+    // // Pawns cannot move if they're at the end of the board,
+    // // or if they're blocked by a piece in front of it and there's nothing to capture on the diagonals.
+    // if (pieceTag % 128 == Pawn) {
+    //     int direction = pieceTag < 128 ? 1 : -1;
+    //     if (y + direction >= 8 || y + direction < 0) {
+    //         canBitMove = false;
+    //     }
+    //     if (!_grid[y + direction][x].empty()) {
+    //         canBitMove = false;
+    //     }
+    // }
+    // else if (bit.gameTag() % 128 == Knight) {
+
+    // }
+    // else if (bit.gameTag() % 128 == Bishop) {
+
+    // }
+    // else if (bit.gameTag() % 128 == Rook) {
+
+    // }
+    // else if (bit.gameTag() % 128 == Queen) {
+
+    // }
+    // else if (bit.gameTag() % 128 == King) {
+        
+    // }
+
+    // return canBitMove;
+
+    // Above was the code I started working on, but realized halfway through that
+    // it was a nightmare to write, and isn't the established correct way of doing
+    // things. So I copypasted this code from Discord and started working on the
+    // generated moves lists.
+    
+    // ChessSquare& srcSquare = static_cast<ChessSquare&>(src);
+    // bool canMove = false;
+    // for (auto move : _moves) {
+    //     if (move.from == srcSquare.getSquareIndex()) {
+    //         canMove = true;
+    //         for (int y = 0; y < _gameOptions.rowY; y++) {
+    //             for (int x = 0; x < _gameOptions.rowX; x++) {
+    //                 ChessSquare& dstSquare = _grid[y][x];
+    //                 if (move.to == dstSquare.getSquareIndex()) {
+    //                     dstSquare.setMoveHighlighted(true);
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+    // return canMove;
     return true;
 }
 
@@ -75,7 +166,8 @@ bool Chess::canBitMoveFromTo(Bit& bit, BitHolder& src, BitHolder& dst)
 }
 
 void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst) {
-
+    endTurn();
+    generateMoves();
 }
 
 //
@@ -156,6 +248,16 @@ void Chess::setStateString(const std::string &s)
             } else {
                 _grid[y][x].setBit(nullptr);
             }
+        }
+    }
+}
+
+// Here are the helper functions I'm writing:
+
+void Chess::generateMoves() {
+    for (int y = 0; y < _gameOptions.rowY; y++) {
+        for (int x = 0; x < _gameOptions.rowX; x++) {
+            int piece = _grid[y][x].gameTag();
         }
     }
 }
