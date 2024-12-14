@@ -15,6 +15,22 @@ enum ChessPiece {
 };
 
 //
+// this is the AI class
+// we use a small clone here so we can recursively call minimax
+//
+// struct ChessAI
+// {
+//     int evaluateBoard();
+//     int evaluateBoardMinimax();
+//     int minimax(TicTacToeAI* state, int depth, bool isMaximizingPlayer);
+//     int negamax(TicTacToeAI* state, int depth, int playerColor);
+//     int ownerAt(int index ) const;
+//     int AICheckForWinner();
+//     // new helper function
+//     TicTacToeAI* clone();
+// };
+
+//
 // the main game class
 //
 class Chess : public Game
@@ -44,6 +60,11 @@ public:
     void        checkCastlingRights(Bit& bit, ChessSquare& srcSquare, ChessSquare& dstSquare);
     void        pieceTaken(Bit* bit) override;
 
+    // New AI-related functions:
+    int         evaluateBoard(const std::string state);
+    std::string sampleMove(Bit& bit, ChessSquare& srcSquare, ChessSquare& dstSquare);
+    int         negamax(const std::string state, int depth, int playerColor);
+
     void        stopGame() override;
     BitHolder& getHolderAt(const int x, const int y) override { return _grid[y][x]; }
 
@@ -60,5 +81,9 @@ private:
     bool            _castling[4]; // booleans for K, Q, k, q, in that order
     ChessSquare*    _enPassant;
     int             _halfmoveClock;
+
+    // New private variable to detect if anyone is in check.
+    // 0 if player 0 is in check, 1 if player 1 is in check, -1 if no one is in check.
+    // int _check;
 };
 

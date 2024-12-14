@@ -17,3 +17,7 @@ Then I had to add variables for active color, castling rights, en passant, and m
 A lot of things were handled in bitMovedFromTo(). checkCastlingRights() was made to check when castling would become permanently unavailable, but the actual motions of moving the King was checked for in canBitMoveFromTo(). En Passant could be programmed using existing code in the Pawn movement check, and pawn promotion was as simple as checking if a piece is at the end of the board and creating a new Queen bit.
 
 Sorry I'm running out of time to write things in more detail. But this is how things went in a nutshell. I had help in office hours from Reza to help understand how this code is similar and different to Coding Adventure.
+
+## Writing Negamax
+
+Going into the negamax AI, I have a problem: I am very short on time because I've been bogged down with other assignments and haven't had any time to start this project until Friday. And I haven't had time to implement the concept of check. It's a pretty complicated concept to implement and I'm not sure I'll have time. So instead, I wrote my negamax AI to play with the end goal of capturing the King. It's a scuffed solution, but at the very least the AI will be functional.

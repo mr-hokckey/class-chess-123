@@ -1,4 +1,5 @@
 #include "Chess.h"
+#include "Evaluate.h"
 
 const int AI_PLAYER = 1;
 const int HUMAN_PLAYER = -1;
@@ -58,6 +59,10 @@ void Chess::setUpBoard()
     // FENtoBoard("r3k2r/1b4bq/8/8/8/8/7B/R3K2R w KQkq - 0 1"); // white can castle both sides
     // FENtoBoard("2K2r2/4P3/8/8/8/8/8/3k4 w - - 0 1"); // white can promote to queen
     // FENtoBoard("4k3/1P6/8/8/8/8/K7/8 w - - 0 1"); // white can promote to queen
+
+    if (gameHasAI()) {
+        setAIPlayer(AI_PLAYER);
+    }
 }
 
 //
@@ -415,6 +420,12 @@ void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst) {
     // If King just moved 2 spaces, it just castled, so that needs to be updated.
     checkCastlingRights(bit, srcSquare, dstSquare);
 
+    if (gameHasAI() && getCurrentPlayer() && getCurrentPlayer()->isAIPlayer()) 
+    {
+        updateAI();
+        return;
+    }
+    
     endTurn();
 }
 
@@ -761,5 +772,113 @@ void Chess::checkCastlingRights(Bit& bit, ChessSquare& srcSquare, ChessSquare& d
 //
 void Chess::updateAI() 
 {
+    if (checkForWinner() || checkForDraw()) {
+        endTurn();
+        return;
+    }
+
+    int bestScore = -1000000;
+    int bestMoveYsrc = 0;
+    int bestMoveXsrc = 0;
+    int bestMoveYdst = 0;
+    int bestMoveXdst = 0;
+    
+    for (int i = 0; i < 64; i++) {
+        if (_grid[i/8][i%8].bit() && canBitMoveFrom(*_grid[i/8][i%8].bit(), _grid[i/8][i%8])) {
+            for (int j = 0; j < 64; j++) {
+                if (canBitMoveFromTo(*_grid[i/8][i%8].bit(), _grid[i/8][i%8], _grid[j/8][j%8])) {
+                    std::cout << "testing a move" << std::endl; 
+                    std::string newState = sampleMove(*_grid[i/8][i%8].bit(), _grid[i/8][i%8], _grid[j/8][j%8]);
+                    int score = -negamax(newState, 0, -1);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMoveYsrc = i/8;
+                        bestMoveXsrc = i%8;
+                        bestMoveYdst = j/8;
+                        bestMoveXdst = j%8;
+                    }
+                }
+            }
+        }
+    }
+    
+    ChessPiece tag = static_cast<ChessPiece>(_grid[bestMoveYsrc][bestMoveXsrc].bit()->gameTag() % 128);
+    _grid[0][0].destroyBit();
+            
+    Bit* newBit = PieceForPlayer(1, tag);
+    newBit->setPosition(_grid[bestMoveYdst][bestMoveXdst].getPosition());
+    newBit->setParent(&_grid[bestMoveYdst][bestMoveXdst]);
+    newBit->setGameTag(tag);
+    _grid[bestMoveYdst][bestMoveXdst].setBit(newBit);
+    
+    endTurn();
 }
 
+// This function does a few things, in this order:
+// 1) temporarily moves a piece from one square to another.
+// 2) generates a FEN string of this new board state.
+// 3) 
+std::string Chess::sampleMove(Bit& bit, ChessSquare& srcSquare, ChessSquare& dstSquare) {
+    // Whose move is this?
+    int playerMoving = bit.getOwner()->playerNumber();
+
+    std::string current_state = boardToFEN();
+
+    // Is a piece about to be captured?
+    char capturedPiece = bitToPieceNotation(dstSquare.getRow(), dstSquare.getColumn());
+
+
+
+    // Simulate the consequences of moving a piece. Much of this can be copypasted from bitMovedFromTo().
+
+    if (bit.gameTag() % 128 == Pawn) {
+        // reset halfmove clock
+        _halfmoveClock = 0;
+
+        // Check if an en passant was made, or if a new one is available
+        int direction = (bit.gameTag() < 128) ? 1 : -1;
+        checkEnPassant(bit, srcSquare, dstSquare, direction);
+
+        // If a pawn just reached the other side of the board, it should be promoted to a queen.
+        int farthestRank = (bit.gameTag() < 128) ? 7 : 0;
+        checkPawnPromotion(bit, srcSquare, dstSquare, farthestRank);
+    } 
+    else if (capturedPiece != '0') {
+        _halfmoveClock = 0;
+    }
+    else { _halfmoveClock++; }
+
+    // If King just moved 2 spaces, it just castled, so that needs to be updated.
+    checkCastlingRights(bit, srcSquare, dstSquare);
+
+    // Now get a FEN string for this new state
+    std::string new_state = boardToFEN();
+
+    // Revert board state
+    FENtoBoard(current_state);
+
+    return new_state;
+}
+
+int Chess::negamax(const std::string state, int depth, int playerColor) {
+    int thisScore = playerColor * evaluateBoard(state);
+
+    if (depth > 3)      { return thisScore; }
+
+    int bestScore = -1000000;
+    
+    for (int i = 0; i < 64; i++) {
+        if (_grid[i/8][i%8].bit() && canBitMoveFrom(*_grid[i/8][i%8].bit(), _grid[i/8][i%8])) {
+            for (int j = 0; j < 64; j++) {
+                if (canBitMoveFromTo(*_grid[i/8][i%8].bit(), _grid[i/8][i%8], _grid[j/8][j%8])) {
+                    std::string newState = sampleMove(*_grid[i/8][i%8].bit(), _grid[i/8][i%8], _grid[j/8][j%8]);
+                    int score = -negamax(newState, depth + 1, -playerColor);
+                    if (score > bestScore) {
+                        bestScore = score;
+                    }
+                }
+            }
+        }
+    }
+    return bestScore;
+}
